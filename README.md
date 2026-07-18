@@ -5,22 +5,22 @@
 ## Порядок запуска
 
 ### 1. Генерация датасета
-
+```bash
 python src/generate_contracts.py --count 30 --out ./dataset
-
+```
 Создаёт 30 DOCX-договоров и labels.json с эталонной разметкой.
 
 ### 2. Конвертация в PDF (Windows + Word)
-
+```powershell
 powershell -File src/convert_to_pdf.ps1
-
+```
 Создаёт PDF-версии первых 10 договоров.
 
 ### 3. Создание базы данных и загрузка разметки
-
+```bash
 sqlite3 database/contracts.db < database/schema.sql
 python src/populate_db.py
-
+```
 Создаёт SQLite-базу и заполняет её данными из labels.json.
 
 ## Структура проекта
@@ -35,5 +35,6 @@ python src/populate_db.py
 | src/ | generate_contracts.py, populate_db.py, convert_to_pdf.ps1 |
 
 ## Зависимости
-
+```bash
 pip install -r requirements.txt
+```
