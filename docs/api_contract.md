@@ -94,11 +94,4 @@
 | status | string | uploaded / processing / completed / error |
 | date | string | Всегда YYYY-MM-DD |
 | amount | integer | Всегда число, не строка |
-| parties | array | Всегда массив объектов |------------------|
-
-| `date` | Всегда `YYYY-MM-DD` |
-
-| `amount` | Всегда число (не строка) |
-
-| `parties` | Всегда массив объектов |
-
+| parties | array | Всегда массив объектов |
