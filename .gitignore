@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.env
+*.egg-info/
+dist/
+build/
+
+# База данных 
+*.db
+
+# dataset/docx/*.docx
+# dataset/pdf/*.pdf
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Временные файлы
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
