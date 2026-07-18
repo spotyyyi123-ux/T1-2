@@ -3,6 +3,7 @@
     filename TEXT NOT NULL,
     file_path TEXT NOT NULL,
     file_type TEXT CHECK(file_type IN ('docx', 'pdf')),
+    source_group_id TEXT,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     raw_text TEXT,
     status TEXT DEFAULT 'uploaded' 

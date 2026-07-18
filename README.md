@@ -1,18 +1,9 @@
-\# ContractAI — Sprint 1
-
-
+# ContractAI — Sprint 1
 
 Автоматизация извлечения полей (номер, дата, сумма, стороны) из договоров.
 
+## Порядок запуска
 
-
-\## Порядок запуска
-
-
-
-\### 1. Генерация датасета
-
+### 1. Генерация датасета
 ```bash
-
-python src/generate\_contracts.py --count 30 --out ./dataset
-
+python src/generate_contracts.py --count 30 --out ./dataset
