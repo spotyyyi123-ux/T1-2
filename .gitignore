@@ -1,33 +1,7 @@
-# Python
+.env
+uploads/
+user_data/
 __pycache__/
 *.py[cod]
-*.pyo
-venv/
-.env
-*.egg-info/
-dist/
-build/
-
-# База данных 
-*.db
-
-# Локально загруженные файлы (реальные, не синтетика — не коммитим)
-storage/uploads/
-
-# Файлы, сгенерированные src/parse_one.py при ручной проверке
-dataset/**/*_parsed.txt
-
-# dataset/docx/*.docx
-# dataset/pdf/*.pdf
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Временные файлы
-*.tmp
-*.log
+.pytest_cache/
 .DS_Store
-Thumbs.db

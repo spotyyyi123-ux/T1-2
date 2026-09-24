@@ -1,20 +1,13 @@
-# Генерация датасета (src/generate_contracts.py)
-python-docx==1.2.0
-lxml==6.1.1
-
-# Парсинг документов (common/parsers.py)
-pypdf==5.1.0
-
-# Веб-сервис (app/main.py)
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-httpx==0.28.1
-python-dotenv==1.0.1
-sqlalchemy==2.0.36
-python-multipart==0.0.20
-
-# База данных
-psycopg2-binary==2.9.10
-
-# Облачное хранилище (common/storage.py, класс SupabaseStorage)
-supabase==2.10.0
+fastapi>=0.110,<1
+simplejson>=3.19,<4
+uvicorn[standard]>=0.27,<1
+sqlalchemy>=2,<3
+psycopg[binary]>=3,<4
+python-dotenv>=1,<2
+python-multipart>=0.0.9,<1
+pypdf>=4,<6
+python-docx>=1,<2
+httpx>=0.27,<1
+email-validator>=2,<3
+PyJWT>=2.8,<3
+pwdlib[argon2]>=0.2,<1

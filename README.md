@@ -1,59 +1,149 @@
-# ContractAI — Sprint 1
+# Contract Intelligence
 
-Автоматизация извлечения полей (номер, дата, сумма, стороны) из договоров.
-
-## Порядок запуска
-
-### 1. Генерация датасета
-```bash
-python src/generate_contracts.py --count 30 --out ./dataset
-```
-Создаёт 30 DOCX-договоров и labels.json с эталонной разметкой.
-
-### 2. Конвертация в PDF (Windows + Word)
-```powershell
-powershell -File src/convert_to_pdf.ps1
-```
-Создаёт PDF-версии первых 10 договоров.
-
-### 3. Создание базы данных и загрузка разметки
-```bash
-python src/init_db.py
-python src/populate_db.py
-```
-Создаёт SQLite-базу и заполняет её данными из labels.json.
-
-### 4. Запуск веб-сервиса
-```bash
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-Откройте http://127.0.0.1:8000 — форма загрузки договора и реестр обработанных документов.
-
-Перед запуском создайте `.env` в корне проекта (см. `.env.example`):
-```
-POLZA_API_KEY=ваш_ключ
-POLZA_API_URL=адрес_эндпоинта
-DATABASE_URL=sqlite:///./database/contracts.db
-STORAGE_BACKEND=local
-```
-Чтобы переключиться на Supabase — смените `DATABASE_URL` на строку подключения из Supabase (Connect → Connection string) и `STORAGE_BACKEND=supabase`, добавив `SUPABASE_URL` и `SUPABASE_KEY`.
+Веб-приложение на FastAPI для извлечения ключевых условий из PDF/DOCX и ведения
+реестра договоров.
 
 ## Структура проекта
 
-| Папка | Содержимое |
-|-------|------------|
-| app/ | main.py — FastAPI-бэкенд (загрузка, извлечение полей через ИИ, реестр) |
-| common/ | parsers.py (извлечение текста из PDF/DOCX) и storage.py (хранилище файлов: локально или Supabase) — общий код для app/ и src/ |
-| static/ | index.html — фронтенд реестра |
-| dataset/docx/ | 30 синтетических договоров |
-| dataset/pdf/ | 10 PDF-версий |
-| dataset/annotations/ | labels.json + manual_labels.csv |
-| database/ | schema.sql + contracts.db |
-| docs/ | architecture.md + api_contract.md |
-| src/ | generate_contracts.py, populate_db.py, init_db.py, convert_to_pdf.ps1, parse_one.py |
-
-## Зависимости
-```bash
-pip install -r requirements.txt
+```text
+app/
+├── main.py                  # приложение FastAPI и точка запуска
+├── core/
+│   ├── settings.py          # настройки и пути
+│   └── json_codec.py        # точная сериализация денежных значений
+├── routers/                 # HTTP API: users, documents, folders
+└── services/
+    ├── text_extraction.py   # извлечение текста PDF/DOCX
+    ├── extraction_format.py # нормализация и формат отображения
+    └── document_processing.py # анализ всех частей текста
+database/
+├── base.py                  # общий SQLAlchemy Base
+├── connection.py            # engine, сессии, get_db
+├── models.py                # утверждённые модели таблиц
+└── folder_store.py          # файловое хранилище пользовательских папок
+frontend/
+├── index.html               # интерфейс
+└── static/                  # JavaScript реестра и папок
+dataset/
+├── generate_contracts.py    # генератор синтетических договоров
+├── docx/                   # договоры DOCX
+├── pdf/                    # договоры PDF
+└── annotations/            # JSON- и CSV-разметка
+tests/                      # Python- и JavaScript-тесты
+docs/                       # описание форматов, обработки и состояния работ
+uploads/                    # загруженные документы, не включаются в Git
+user_data/                  # метаданные папок, не включаются в Git
+.env                        # локальные секреты, не включается в Git
+.env.example                # пример настроек
+requirements.txt            # зависимости Python
 ```
+
+Папка `database` содержит код доступа к данным, а не файлы работающего PostgreSQL.
+Структура таблиц при реорганизации не менялась. `uploads/` и `user_data/` оставлены
+на прежних местах для совместимости с сохранёнными документами.
+
+## Локальный запуск
+
+В терминале перейдите в корень проекта (где находятся `requirements.txt` и `app/`):
+
+```sh
+python -m pip install -r requirements.txt
+python -m app.main
+```
+
+Откройте <http://127.0.0.1:8000>.
+
+Существующий `.env` сохраняется без изменений. Если файла ещё нет, создайте его
+по `.env.example` и укажите подключение к PostgreSQL, секрет JWT и настройки
+провайдера ИИ. Не публикуйте заполненный `.env` в репозитории.
+
+Альтернативная команда запуска из корня проекта:
+
+```sh
+python -m uvicorn app.main:app --reload
+```
+
+После переноса старые команды `python main.py` и `uvicorn main:app` больше
+не используются. Запускать `python app/main.py` также не нужно: используйте `-m`.
+`--reload` предназначен для локальной разработки, а не публичного размещения.
+
+HTML, статические файлы, `.env` и относительные пути хранилища определяются от
+корня проекта. Старые относительные пути документов в БД также поддерживаются.
+Таблицы инициализируются при старте сервера, а не при простом импорте `app.main`.
+
+## Синтетический датасет
+
+В `dataset/` добавлен набор для проверки извлечения:
+
+| Путь | Содержимое текущего набора |
+|---|---|
+| `dataset/docx/` | 30 файлов DOCX: `contract_0001.docx` — `contract_0030.docx` |
+| `dataset/pdf/` | 10 файлов PDF: `contract_0001.pdf` — `contract_0010.pdf` |
+| `dataset/annotations/labels.json` | 30 записей разметки с привязкой к DOCX |
+| `dataset/annotations/manual_labels.csv` | 5 записей ручной разметки |
+| `dataset/generate_contracts.py` | генератор DOCX и `labels.json` |
+
+Имена PDF соответствуют части имён DOCX. Перед оценкой нужно сверить их содержимое;
+не следует автоматически считать версии одного договора в двух форматах независимыми
+примерами или разносить их в обучающую и проверочную выборки.
+
+Предусмотрено пять шаблонов: `classic`, `compact`, `split_amount`, `framework`, `modern`.
+В текущем JSON их соответственно 6, 2, 6, 11 и 5. Даты генерируются в диапазоне
+2022–2024 годов, суммы — от 50 000 до 950 000 рублей. Организации и реквизиты
+формируются программно; набор предназначен для учебных экспериментов.
+
+### Генерация нового набора
+
+Зависимость `python-docx` уже включена в `requirements.txt`. Команда из корня проекта
+ниже пишет в **отдельную папку**, чтобы не перезаписать добавленные файлы:
+
+```sh
+python dataset/generate_contracts.py --count 30 --seed 42 --out ./dataset_generated
+```
+
+Параметры: `--count` — число договоров (по умолчанию 30), `--seed` — начальное
+значение генератора случайных чисел (42), `--out` — папка результата (`./dataset`).
+При одном seed и неизменном коде воспроизводятся сгенерированные значения.
+Результат — `docx/contract_XXXX.docx` и `annotations/labels.json` внутри выбранной папки.
+Скрипт **не создаёт PDF и `manual_labels.csv`**; их готовят отдельно.
+Повторный запуск в существующую папку перезапишет совпадающие DOCX и `labels.json`,
+но не удалит оставшиеся файлы предыдущего набора.
+
+### Разметка и оценка качества
+
+В `labels.json` хранятся `file`, `template`, `number`, `date`, `date_text`, `amount`,
+`amount_text`, `kind` и `parties` (название, роль, ИНН, ОГРН).
+Колонки CSV: `file,number,date,amount,amount_text,customer,executor`.
+
+Для сравнения с API нужно сопоставить `number` с `contract_number`, `date` с
+`contract_date`, `executor`/сторону «Исполнитель» с `contractor`, а сторону
+«Заказчик» с `customer`. Сравнивать следует машинные `extracted_data`, не `display_data`.
+
+Разметку нужно проверить до использования как эталон. В текущем генераторе у
+шаблона `modern` в текст вставляется `number_short`, а в `label.number` записывается
+другой `contract_number`. Кроме того, `date_text` форматируется повторно случайным
+образом и может отличаться от написания даты в файле при той же календарной дате.
+Для рамочных договоров отдельно нужно определить, считается ли максимальная сумма
+значением поля `amount`. Эти особенности нельзя считать ошибками извлекателя.
+
+Наличие разметки ещё не подтверждает точность 80%: нужен отдельный запуск оценки
+по проверенным эталонам. Программные тесты ниже проверяют поведение кода,
+а не качество ответов реальной модели на датасете.
+
+## Тесты
+
+```sh
+python -m unittest discover -s tests -v
+node tests/test_registry.js
+```
+
+Тесты используют временную БД и подмену провайдера: рабочие записи и платное API
+не задействуются. Проверки структуры дополнительно проверяют реальную точку входа,
+выдачу HTML/JS из другой рабочей папки и защищённость API без авторизации.
+
+## Документация
+
+- [API-контракт](docs/api_contract.md)
+- [Формат данных](docs/data-format.md)
+- [Обработка полного текста](docs/full-document-processing.md)
+- [Состояние работ](docs/progress.md)

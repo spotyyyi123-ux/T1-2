@@ -1,0 +1,1 @@
+"""Contract extraction web application."""

@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Contract Parser</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --primary-blue: #007AFF; 
+            --primary-hover: #005ECB;
+            --bg-light: #f4f7fb;
+            --text-main: #1e293b;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-blue);
+            border-color: var(--primary-blue);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25);
+        }
+        .btn-primary:hover, .btn-primary:focus {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35);
+        }
+        
+        .text-primary { color: var(--primary-blue) !important; }
+        .badge.bg-primary { background-color: var(--primary-blue) !important; }
+
+        .app-header {
+            background: white;
+            border-bottom: 3px solid var(--primary-blue);
+            padding: 1.2rem 0;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 2px 12px rgba(0, 122, 255, 0.08);
+        }
+
+        .brand-title {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: var(--primary-blue);
+            letter-spacing: -0.02em;
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.07);
+            overflow: hidden;
+        }
+
+        #authSection .card {
+            border-top: 4px solid var(--primary-blue);
+        }
+
+        .table thead th {
+            background: linear-gradient(135deg, var(--primary-blue), #0088FF);
+            color: white;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 1rem 1.2rem;
+            border: none;
+        }
+
+        .table tbody td {
+            padding: 1rem 1.2rem;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 122, 255, 0.04);
+        }
+
+        /* Статусы */
+        .status-badge { 
+            min-width: 100px; 
+            font-weight: 600;
+            padding: 0.45em 0.9em;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        .user-panel {
+            background: white;
+            border-left: 4px solid var(--primary-blue);
+            border-radius: 10px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.06);
+        }
+
+        #appSection { display: none; }
+
+        .registry-table { min-width: 1050px; }
+        .registry-table .document-cell { max-width: 230px; }
+        .registry-table .party-cell { max-width: 170px; }
+        .cell-preview {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .money-value { white-space: nowrap; font-variant-numeric: tabular-nums; }
+        body:has(dialog[open]) { overflow: hidden; }
+        .workspace-container { max-width: 1520px; }
+        .library-layout { display: grid; grid-template-columns: 205px minmax(0, 1fr); gap: 20px; }
+        .folder-sidebar { align-self: start; padding: 16px 10px; background: white; border-radius: 12px; }
+        .folder-button { display: flex; align-items: center; gap: 9px; width: 100%; border: 1px solid transparent; background: none; text-align: left; padding: 11px 10px; border-radius: 8px; color: #475569; }
+        .folder-button .folder-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .folder-button:hover { background: #f4f7fb; }
+        .folder-button[aria-current="page"] { color: #005ecb; background: #eaf3ff; font-weight: 600; }
+        .folder-button.drop-target { border: 1px dashed #007aff; background: #eaf3ff; }
+        .folder-count { font-size: 0.75rem; color: #64748b; }
+        .library-main { min-width: 0; }
+        .library-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .library-toolbar .search-group { flex: 1 1 260px; }
+        .library-toolbar select { width: auto; max-width: 100%; }
+        .row-actions { display: flex; align-items: center; gap: 5px; }
+        .drag-handle { cursor: grab; color: #94a3b8; margin-right: 5px; }
+        tr[draggable="true"] { cursor: grab; }
+        tr.dragging { opacity: 0.45; }
+        .action-dialog { width: min(480px, calc(100vw - 32px)); }
+        .action-dialog h2 { font-size: 1.2rem; }
+        .action-dialog .dialog-content { overflow-wrap: anywhere; }
+        @media (max-width: 1100px) {
+            .library-layout { grid-template-columns: 1fr; }
+            #folderList { display: flex; flex-wrap: wrap; gap: 5px; }
+            .folder-button { width: auto; max-width: 240px; }
+        }
+        .document-dialog {
+            width: min(900px, calc(100vw - 32px));
+            max-height: calc(100dvh - 48px);
+            margin: auto;
+            padding: 0;
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            color: var(--text-main);
+            background: #fff;
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.25);
+        }
+        .document-dialog::backdrop {
+            background: rgba(15, 23, 42, 0.48);
+            backdrop-filter: blur(3px);
+        }
+        .dialog-header, .dialog-footer { padding: 20px 28px; background: #fff; }
+        .dialog-header { border-bottom: 1px solid var(--border-color); }
+        .dialog-header h2 { font-size: 1.25rem; font-weight: 600; }
+        .dialog-header p { overflow-wrap: anywhere; }
+        .dialog-content { padding: 24px 28px; }
+        .dialog-footer { border-top: 1px solid var(--border-color); text-align: right; }
+        .dialog-overview {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.4fr;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+        .dialog-overview > div {
+            padding: 16px;
+            border-radius: 10px;
+            background: var(--bg-light);
+            overflow-wrap: anywhere;
+        }
+        .dialog-overview dt { font-size: 0.75rem; color: #64748b; font-weight: 500; margin-bottom: 8px; }
+        .dialog-overview dd { margin: 0; font-weight: 600; }
+        .detail-section + .detail-section { margin-top: 28px; }
+        .detail-section h3 { font-size: 1rem; font-weight: 600; margin-bottom: 14px; }
+        .detail-grid { margin: 0; }
+        .detail-field {
+            display: grid;
+            grid-template-columns: 180px minmax(0, 1fr);
+            gap: 20px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .detail-field dt { font-size: 0.875rem; font-weight: 400; color: #64748b; }
+        .detail-field dd { margin: 0; font-size: 0.9rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .detail-missing { color: #64748b; }
+        .dialog-logs { padding-left: 1.25rem; margin-bottom: 0; font-size: 0.875rem; }
+        .dialog-logs li + li { margin-top: 8px; }
+        @media (max-width: 600px) {
+            .dialog-header, .dialog-footer, .dialog-content { padding: 18px; }
+            .dialog-overview { grid-template-columns: 1fr; }
+            .detail-field { grid-template-columns: 1fr; gap: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-file-earmark-bar-graph fs-4" style="color: var(--primary-blue);"></i>
+                <span class="brand-title">Contract Intelligence</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container pb-5 workspace-container">
+
+        <!-- СЕКЦИЯ 1: АВТОРИЗАЦИЯ -->
+        <div class="row justify-content-center" id="authSection">
+            <div class="col-md-5">
+                <div class="card mt-4">
+                    <div class="card-body p-5">
+                        <div class="text-center mb-4">
+                            <i class="bi bi-shield-lock fs-1 text-primary"></i>
+                            <h4 class="mt-2 fw-bold">Вход в систему</h4>
+                            <p class="text-muted small">Доступ к реестру договоров</p>
+                        </div>
+                        <form id="authForm">
+                            <div class="mb-3">
+                                <label class="form-label fw-medium small text-uppercase text-muted">Email адрес</label>
+                                <input type="email" class="form-control form-control-lg" id="emailInput" placeholder="name@company.com" required>
+                            </div>
+                            <!-- ДОБАВЛЕНО ПОЛЕ ПАРОЛЯ -->
+                            <div class="mb-4">
+                                <label class="form-label fw-medium small text-uppercase text-muted">Пароль</label>
+                                <input type="password" class="form-control form-control-lg" id="passwordInput" placeholder="Ваш пароль" required>
+                                <div class="form-text ms-1">Аккаунт будет создан с этим паролем при первом входе</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 py-2" id="authBtn">
+                                Войти / Зарегистрироваться
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- СЕКЦИЯ 2: ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
+        <div id="appSection">
+            
+            <!-- Панель пользователя -->
+            <div class="user-panel d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-person-circle fs-5 me-2 text-primary"></i>
+                    <span class="fw-medium">Пользователь: <strong id="currentUserEmail" class="text-dark"></strong></span>
+                </div>
+                <button class="btn btn-sm btn-outline-danger border-0" onclick="logout()">
+                    <i class="bi bi-box-arrow-right me-1"></i> Выйти
+                </button>
+            </div>
+
+            <!-- Блок загрузки -->
+            <div class="card mb-4">
+                <div class="card-body p-4">
+                    <form id="uploadForm" class="d-flex align-items-center gap-3">
+                        <div class="flex-grow-1">
+                            <label class="form-label fw-medium small text-uppercase text-muted mb-1">Загрузка документа</label>
+                            <input class="form-control" type="file" id="fileInput" accept=".pdf, .docx" required>
+                        </div>
+                        <div class="pt-4">
+                            <button class="btn btn-primary px-4 d-flex align-items-center" type="submit" id="submitBtn">
+                                <span id="btnText"><i class="bi bi-cloud-upload me-2"></i>Анализ</span>
+                                <div id="btnSpinner" class="spinner-border spinner-border-sm ms-2 d-none" role="status"></div>
+                            </button>
+                        </div>
+                    </form>
+                    <p id="uploadDestination" class="small text-muted mt-2 mb-0">Новые документы попадут в «Без папки».</p>
+                    <div id="alertBox" class="mt-3 d-none alert" role="alert"></div>
+                </div>
+            </div>
+
+            <div class="library-layout">
+                <aside class="folder-sidebar" aria-label="Папки документов">
+                    <div class="d-flex align-items-center justify-content-between px-2 mb-2">
+                        <span class="fw-semibold">Папки</span>
+                        <button type="button" id="createFolderBtn" class="btn btn-sm btn-outline-primary" aria-label="Создать папку" title="Создать папку"><i class="bi bi-folder-plus"></i></button>
+                    </div>
+                    <nav id="folderList" aria-label="Выбор папки"></nav>
+                    <p class="small text-muted px-2 mt-3 mb-0">Перетащите документ на папку. Чтобы вынести его из папки — на «Без папки».</p>
+                </aside>
+                <section class="library-main" aria-label="Реестр документов">
+                    <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                        <div><h2 id="currentFolderTitle" class="h5 mb-1">Все документы</h2><span id="documentCount" class="small text-muted" aria-live="polite"></span></div>
+                        <div id="folderActions" class="d-none">
+                            <button type="button" id="renameFolderBtn" class="btn btn-sm btn-outline-secondary">Переименовать</button>
+                            <button type="button" id="deleteFolderBtn" class="btn btn-sm btn-outline-danger">Удалить папку</button>
+                        </div>
+                    </div>
+                    <div class="library-toolbar">
+                        <div class="input-group search-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input id="documentSearch" type="search" class="form-control" placeholder="Файл, номер, сторона или условия договора" aria-label="Поиск документов">
+                            <button id="clearSearchBtn" type="button" class="btn btn-outline-secondary" aria-label="Очистить поиск">×</button>
+                        </div>
+                        <select id="documentSort" class="form-select" aria-label="Сортировка документов">
+                            <option value="uploaded_desc">Сначала новые загрузки</option>
+                            <option value="uploaded_asc">Сначала старые загрузки</option>
+                            <option value="name_asc">Имя файла: А → Я</option>
+                            <option value="name_desc">Имя файла: Я → А</option>
+                            <option value="date_desc">Дата договора: новые</option>
+                            <option value="date_asc">Дата договора: старые</option>
+                            <option value="amount_asc">Сумма: по возрастанию</option>
+                            <option value="amount_desc">Сумма: по убыванию</option>
+                            <option value="status_asc">Статус обработки</option>
+                        </select>
+                    </div>
+                    <p id="sortNote" class="small text-muted d-none">Суммы отсортированы внутри каждой валюты, без конвертации.</p>
+                    <p id="libraryError" class="alert alert-danger d-none" role="alert"></p>
+            <!-- Таблица -->
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 registry-table">
+                            <thead>
+                                <tr>
+                                    <th>Документ</th>
+                                    <th>Дата договора</th>
+                                    <th>Заказчик</th>
+                                    <th>Исполнитель</th>
+                                    <th class="text-end">Сумма</th>
+                                    <th>Статус</th>
+                                    <th><span class="visually-hidden">Подробности</span></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <tr><td colspan="7" class="text-center py-5 text-muted">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                    Загрузка реестра...
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Окно находится вне таблицы и не пересоздаётся при обновлении реестра. -->
+    <dialog id="documentDialog" class="document-dialog" aria-labelledby="documentDialogTitle" aria-describedby="documentDialogFilename">
+        <header class="dialog-header d-flex justify-content-between align-items-start gap-3">
+            <div>
+                <h2 id="documentDialogTitle" class="mb-2">Информация о документе</h2>
+                <p id="documentDialogFilename" class="text-muted small mb-0"></p>
+            </div>
+            <form method="dialog">
+                <button type="submit" class="btn-close" aria-label="Закрыть окно" autofocus></button>
+            </form>
+        </header>
+        <div id="documentDialogContent" class="dialog-content"></div>
+        <footer class="dialog-footer">
+            <form method="dialog"><button type="submit" class="btn btn-primary px-4">Закрыть</button></form>
+        </footer>
+    </dialog>
+
+    <dialog id="actionDialog" class="document-dialog action-dialog" aria-labelledby="actionTitle">
+        <form id="actionForm">
+            <div class="dialog-content">
+                <h2 id="actionTitle" class="mb-3"></h2>
+                <p id="actionDescription" class="text-muted small"></p>
+                <div id="folderNameGroup" class="mb-3" hidden>
+                    <label for="folderNameInput" class="form-label">Название папки</label>
+                    <input id="folderNameInput" class="form-control" maxlength="80" autocomplete="off">
+                </div>
+                <div id="moveFolderGroup" class="mb-3" hidden>
+                    <label for="moveFolderSelect" class="form-label">Куда переместить</label>
+                    <select id="moveFolderSelect" class="form-select"></select>
+                </div>
+                <p id="actionError" class="alert alert-danger small mb-0" role="alert" hidden></p>
+            </div>
+            <div class="dialog-footer d-flex justify-content-end gap-2">
+                <button type="button" id="cancelActionBtn" class="btn btn-outline-secondary">Отмена</button>
+                <button type="submit" id="confirmActionBtn" class="btn btn-primary">Сохранить</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="/static/registry-utils.js"></script>
+    <script>
+        const API_BASE = '/api';
+        const NOT_FOUND = 'Не найдено';
+        let accessToken = null;
+        let updateInterval = null;
+        let documentsById = new Map();
+        let activeDocumentId = null;
+        let loadingSession = null;
+        let renderedRegistry = null;
+        const documentDialog = document.getElementById('documentDialog');
+
+        function fieldText(value) {
+            return value === undefined || value === null || value === '' ? NOT_FOUND : String(value);
+        }
+
+        // Amounts/dates already share one server-side formatter, including old records.
+        // Use the same currency display in the registry and the detail window.
+        function moneyText(data) {
+            const amount = fieldText(data.amount);
+            const currency = fieldText(data.currency);
+            if (amount === NOT_FOUND || currency === NOT_FOUND) return amount;
+            const symbol = { RUB: '₽', USD: '$', EUR: '€', GBP: '£', KZT: '₸' }[currency] || currency;
+            // A condition/range is retained as text instead of being guessed as a price.
+            return /^[-+]?\d[\d ]*,\d{2}$/.test(amount) ? `${amount} ${symbol}` : amount;
+        }
+
+        function uploadTimeText(value) {
+            if (!value) return NOT_FOUND;
+            // Existing database timestamps are naive UTC.
+            const iso = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`;
+            const date = new Date(iso);
+            return Number.isNaN(date.getTime()) ? NOT_FOUND : new Intl.DateTimeFormat('ru-RU', {
+                dateStyle: 'short', timeStyle: 'short'
+            }).format(date);
+        }
+
+        function detailField(label, value, className = 'detail-field') {
+            const wrapper = document.createElement('div');
+            wrapper.className = className;
+            const term = document.createElement('dt');
+            term.textContent = label;
+            const definition = document.createElement('dd');
+            definition.textContent = fieldText(value);
+            if (definition.textContent === NOT_FOUND) definition.className = 'detail-missing';
+            wrapper.append(term, definition);
+            return wrapper;
+        }
+
+        function openDocumentDetails(id) {
+            const doc = documentsById.get(String(id));
+            if (!doc) return;
+            activeDocumentId = String(id);
+            const data = doc.display_data || doc.extracted_data || {};
+            document.getElementById('documentDialogFilename').textContent = doc.filename;
+            const content = document.getElementById('documentDialogContent');
+            content.replaceChildren();
+            const overview = document.createElement('dl');
+            overview.className = 'dialog-overview';
+            overview.append(
+                detailField('Номер договора', data.contract_number, ''),
+                detailField('Дата договора', data.contract_date, ''),
+                detailField('Сумма договора', moneyText(data), '')
+            );
+            content.appendChild(overview);
+            const groups = [
+                ['Участники и предмет договора', [
+                    ['Заказчик', data.customer], ['Исполнитель', data.contractor], ['Предмет', data.subject]
+                ]],
+                ['Финансовые условия', [
+                    ['Валюта', data.currency], ['НДС', data.vat_rate], ['Условия оплаты', data.payment_terms]
+                ]],
+                ['Сроки и обязательства', [
+                    ['Срок исполнения', data.performance_deadline], ['Срок действия', data.validity_period],
+                    ['Неустойка', data.penalty_terms], ['Расторжение', data.termination_terms]
+                ]],
+                ['О документе', [
+                    ['Номер в реестре', `#${doc.id}`], ['Загружен', uploadTimeText(doc.uploaded_at)],
+                    ['Папка', folderName(doc.folder_id)],
+                    ['Статус', {completed: 'Готово', failed: 'Ошибка', pending: 'Ожидает обработки', processing: 'Анализ'}[doc.status]]
+                ]]
+            ];
+            for (const [title, fields] of groups) {
+                const section = document.createElement('section');
+                section.className = 'detail-section';
+                const heading = document.createElement('h3');
+                heading.textContent = title;
+                const list = document.createElement('dl');
+                list.className = 'detail-grid';
+                fields.forEach(([label, value]) => list.appendChild(detailField(label, value)));
+                section.append(heading, list);
+                content.appendChild(section);
+            }
+            if (doc.logs?.length) {
+                const section = document.createElement('section');
+                section.className = 'detail-section';
+                const heading = document.createElement('h3');
+                heading.textContent = 'История обработки';
+                const list = document.createElement('ol');
+                list.className = 'dialog-logs';
+                doc.logs.forEach(message => {
+                    const item = document.createElement('li');
+                    item.textContent = message;
+                    list.appendChild(item);
+                });
+                section.append(heading, list);
+                content.appendChild(section);
+            }
+            if (!documentDialog.open) documentDialog.showModal();
+            documentDialog.scrollTop = 0;
+        }
+
+        document.getElementById('tableBody').addEventListener('click', event => {
+            const button = event.target.closest('button[data-document-id]');
+            if (!button) return;
+            if (button.dataset.action === 'move') openLibraryAction('move', button.dataset.documentId);
+            else if (button.dataset.action === 'delete') openLibraryAction('deleteDocument', button.dataset.documentId);
+            else openDocumentDetails(button.dataset.documentId);
+        });
+        documentDialog.addEventListener('close', () => {
+            // Polling can replace the original button while the dialog is open.
+            const button = Array.from(document.querySelectorAll('button[data-document-id]'))
+                .find(item => item.dataset.documentId === activeDocumentId);
+            if (accessToken) button?.focus({preventScroll: true});
+            activeDocumentId = null;
+        });
+        documentDialog.addEventListener('click', event => {
+            const rect = documentDialog.getBoundingClientRect();
+            if (event.target === documentDialog && (
+                event.clientX < rect.left || event.clientX > rect.right ||
+                event.clientY < rect.top || event.clientY > rect.bottom
+            )) documentDialog.close();
+        });
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>'"]/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            })[char]);
+        }
+
+        function authHeaders() {
+            return accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {};
+        }
+
+        function showAlert(message, type = 'danger') {
+            const alertBox = document.getElementById('alertBox');
+            const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
+            alertBox.className = `mt-3 alert alert-${type} d-flex align-items-center`;
+            alertBox.innerHTML = `<i class="bi ${icon} me-2"></i> ${escapeHtml(message)}`;
+            alertBox.classList.remove('d-none');
+            setTimeout(() => alertBox.classList.add('d-none'), 5000);
+        }
+
+        // --- ЛОГИКА АВТОРИЗАЦИИ ---
+        document.getElementById('authForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('emailInput').value;
+            // ПОЛУЧАЕМ ПАРОЛЬ
+            const password = document.getElementById('passwordInput').value; 
+            const btn = document.getElementById('authBtn');
+            const originalText = btn.innerText;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Авторизация...';
+
+            try {
+                const response = await fetch(`${API_BASE}/users/auth`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // ОТПРАВЛЯЕМ ПАРОЛЬ ВМЕСТЕ С EMAIL
+                    body: JSON.stringify({ email: email, password: password }) 
+                });
+
+                if (!response.ok) {
+                    // ОБРАБОТКА ОШИБКИ НЕВЕРНОГО ПАРОЛЯ
+                    if (response.status === 401) {
+                        throw new Error('Неверный пароль. Попробуйте еще раз.');
+                    }
+                    throw new Error('Ошибка авторизации на сервере');
+                }
+                
+                const userData = await response.json();
+                
+                accessToken = userData.access_token;
+                document.getElementById('currentUserEmail').textContent = userData.email;
+                document.getElementById('authSection').style.display = 'none';
+                document.getElementById('appSection').style.display = 'block';
+                
+                // Очищаем пароль из поля ввода в целях безопасности
+                document.getElementById('passwordInput').value = '';
+                
+                loadDocuments();
+                clearInterval(updateInterval);
+                updateInterval = setInterval(loadDocuments, 3000);
+                
+            } catch (error) {
+                alert(error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
+        });
+
+        function logout() {
+            accessToken = null;
+            clearInterval(updateInterval);
+            if (documentDialog.open) documentDialog.close();
+            documentsById.clear();
+            resetLibrary();
+            renderedRegistry = null;
+            document.getElementById('documentDialogContent').replaceChildren();
+            document.getElementById('documentDialogFilename').textContent = '';
+            document.getElementById('tableBody').replaceChildren();
+            document.getElementById('authSection').style.display = 'flex';
+            document.getElementById('appSection').style.display = 'none';
+            document.getElementById('emailInput').value = '';
+            document.getElementById('passwordInput').value = ''; // Очищаем поле при выходе
+        }
+
+        // --- ЛОГИКА ДОКУМЕНТОВ ---
+        async function loadDocuments(force = false) {
+            return loadLibrary(force);
+        }
+
+        function renderDocumentRows(data) {
+                const tbody = document.getElementById('tableBody');
+                tbody.innerHTML = '';
+                
+                if (data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-folder2-open fs-1 d-block mb-2 opacity-25"></i>
+                                Документы не найдены. Измените поиск, выберите другую папку или загрузите файл.
+                            </td>
+                        </tr>`;
+                    return;
+                }
+
+                data.forEach(doc => {
+                    let number = '—', date = '—', customer = '—', contractor = '—', amount = '—';
+                    let statusHtml = '';
+
+                    if (doc.status === 'completed' && doc.extracted_data) {
+                        statusHtml = '<span class="badge bg-success status-badge"><i class="bi bi-check-lg me-1"></i>Готово</span>';
+                        const data = doc.display_data || doc.extracted_data;
+                        number = escapeHtml(fieldText(data.contract_number));
+                        date = escapeHtml(fieldText(data.contract_date));
+                        customer = escapeHtml(fieldText(data.customer));
+                        contractor = escapeHtml(fieldText(data.contractor));
+                        amount = escapeHtml(moneyText(data));
+                    } else if (doc.status === 'failed') {
+                        statusHtml = '<span class="badge bg-danger status-badge"><i class="bi bi-x-lg me-1"></i>Ошибка</span>';
+                    } else {
+                        statusHtml = '<span class="badge bg-warning text-dark status-badge"><span class="spinner-border spinner-border-sm me-1"></span>Анализ...</span>';
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.draggable = true;
+                    tr.dataset.documentId = String(doc.id);
+                    tr.innerHTML = `
+                        <td class="document-cell">
+                            <span class="cell-preview fw-medium" title="${escapeHtml(doc.filename)}"><i class="bi bi-grip-vertical drag-handle" aria-hidden="true"></i>${escapeHtml(doc.filename)}</span>
+                            <small class="text-muted cell-preview">Договор: ${number}</small>
+                        </td>
+                        <td class="text-muted text-nowrap">${date}</td>
+                        <td class="party-cell"><small class="text-muted cell-preview" title="${customer}">${customer}</small></td>
+                        <td class="party-cell"><small class="text-muted cell-preview" title="${contractor}">${contractor}</small></td>
+                        <td class="text-end fw-medium money-value">${amount}</td>
+                        <td>${statusHtml}</td>
+                        <td><div class="row-actions">
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-document-id="${escapeHtml(doc.id)}" aria-haspopup="dialog">Подробнее</button>
+                            <button type="button" class="btn btn-sm btn-light" data-document-id="${escapeHtml(doc.id)}" data-action="move" title="Переместить" aria-label="Переместить документ" aria-haspopup="dialog"><i class="bi bi-folder-symlink"></i></button>
+                            <button type="button" class="btn btn-sm btn-light text-danger" data-document-id="${escapeHtml(doc.id)}" data-action="delete" title="Удалить" aria-label="Удалить документ" aria-haspopup="dialog"><i class="bi bi-trash"></i></button>
+                        </div></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+        }
+
+        // --- ЗАГРУЗКА ФАЙЛА ---
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('fileInput');
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            
+            if (fileInput.files.length === 0) return;
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            const destination = uploadFolderId();
+            if (destination) formData.append('folder_id', destination);
+
+            btn.disabled = true;
+            btnText.innerHTML = 'Обработка...';
+            btnSpinner.classList.remove('d-none');
+
+            try {
+                const response = await fetch(`${API_BASE}/documents/upload`, {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    let message = `Сервер вернул ошибку: ${response.status}`;
+                    try {
+                        const error = await response.json();
+                        if (error.detail) message = error.detail;
+                    } catch (_) {
+                        // The API did not return JSON; keep the safe fallback.
+                    }
+                    if (response.status === 401) {
+                        logout();
+                    }
+                    throw new Error(message);
+                }
+                
+                showAlert('Документ успешно загружен и отправлен на анализ', 'success');
+                loadDocuments(true);
+                fileInput.value = ''; 
+            } catch (error) {
+                showAlert(error.message);
+                console.error(error);
+            } finally {
+                btn.disabled = false;
+                btnText.innerHTML = '<i class="bi bi-cloud-upload me-2"></i>Анализ';
+                btnSpinner.classList.add('d-none');
+            }
+        });
+    </script>
+    <script src="/static/library.js"></script>
+</body>
+</html>
